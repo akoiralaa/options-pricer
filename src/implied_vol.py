@@ -5,29 +5,13 @@ from black_scholes import BlackScholesModel
 
 class ImpliedVolatility:
     """
-    Calculate implied volatility from option market prices.
+    Find the volatility that matches a market price.
     
-    Uses numerical methods to solve for the volatility that matches
-    the observed market price.
+    This is the reverse of pricing - we know the price,
+    need to find what volatility it implies.
     """
     
     def __init__(self, S, K, T, r, market_price, option_type='call'):
-        """
-        Parameters:
-        -----------
-        S : float
-            Current stock price
-        K : float
-            Strike price
-        T : float
-            Time to expiration (in years)
-        r : float
-            Risk-free rate
-        market_price : float
-            Observed market price of the option
-        option_type : str
-            'call' or 'put'
-        """
         self.S = S
         self.K = K
         self.T = T
@@ -38,52 +22,37 @@ class ImpliedVolatility:
         if self.option_type not in ['call', 'put']:
             raise ValueError("option_type must be 'call' or 'put'")
     
-    def _price_difference(self, sigma):
-        """
-        Calculate difference between theoretical and market price.
-        This is what we're trying to minimize.
-        """
+    def _price_diff(self, sigma):
+        """How far off are we from the market price with this volatility?"""
         bs = BlackScholesModel(self.S, self.K, self.T, self.r, sigma)
         
         if self.option_type == 'call':
-            theoretical_price = bs.call_price()
+            theo_price = bs.call_price()
         else:
-            theoretical_price = bs.put_price()
+            theo_price = bs.put_price()
         
-        return theoretical_price - self.market_price
+        return theo_price - self.market_price
     
     def solve(self, initial_guess=0.3, bounds=(0.001, 5.0)):
         """
-        Solve for implied volatility using Brent's method.
-        
-        Parameters:
-        -----------
-        initial_guess : float
-            Starting volatility guess (default 30%)
-        bounds : tuple
-            Min and max bounds for volatility search
-        
-        Returns:
-        --------
-        float : Implied volatility (as decimal, e.g., 0.25 = 25%)
+        Find the implied volatility.
+        Uses Brent's method (reliable numerical solver).
         """
         try:
-            # Use Brent's method for root finding
-            # We're looking for sigma where price_diff = 0
-            iv = brentq(self._price_difference, bounds[0], bounds[1])
+            iv = brentq(self._price_diff, bounds[0], bounds[1])
             return iv
         except ValueError:
-            # If Brent's method fails, use Newton-Raphson with vega as derivative
+            # If Brent fails, fall back to Newton-Raphson
             return self._newton_raphson(initial_guess)
     
-    def _newton_raphson(self, sigma_guess, max_iterations=100, tolerance=1e-6):
+    def _newton_raphson(self, sigma_guess, max_iter=100, tol=1e-6):
         """
-        Newton-Raphson method for solving implied vol.
-        Uses vega as the derivative.
+        Newton-Raphson method as backup.
+        Uses vega as the derivative (how price changes with vol).
         """
         sigma = sigma_guess
         
-        for i in range(max_iterations):
+        for i in range(max_iter):
             bs = BlackScholesModel(self.S, self.K, self.T, self.r, sigma)
             
             if self.option_type == 'call':
@@ -93,12 +62,12 @@ class ImpliedVolatility:
                 price_diff = bs.put_price() - self.market_price
                 vega = bs.put_vega()
             
-            # Check convergence
-            if abs(price_diff) < tolerance:
+            # If we're close enough, stop
+            if abs(price_diff) < tol:
                 return sigma
             
-            # Newton-Raphson update: sigma_new = sigma - f(sigma) / f'(sigma)
-            # Vega is in terms of 1% change, so multiply by 100
+            # Newton-Raphson: sigma_new = sigma - f(sigma) / f'(sigma)
+            # Vega is per 1%, so multiply by 100
             if vega > 1e-6:
                 sigma = sigma - price_diff / (vega * 100)
             else:
@@ -108,27 +77,6 @@ class ImpliedVolatility:
 
 
 def calculate_iv(S, K, T, r, market_price, option_type='call'):
-    """
-    Convenience function to calculate implied volatility.
-    
-    Parameters:
-    -----------
-    S : float
-        Current stock price
-    K : float
-        Strike price
-    T : float
-        Time to expiration (in years)
-    r : float
-        Risk-free rate
-    market_price : float
-        Observed market price
-    option_type : str
-        'call' or 'put'
-    
-    Returns:
-    --------
-    float : Implied volatility
-    """
-    iv_solver = ImpliedVolatility(S, K, T, r, market_price, option_type)
-    return iv_solver.solve()
+    """Quick function to find implied vol"""
+    solver = ImpliedVolatility(S, K, T, r, market_price, option_type)
+    return solver.solve()

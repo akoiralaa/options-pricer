@@ -4,33 +4,13 @@ from black_scholes import BlackScholesModel
 
 class MonteCarloSimulation:
     """
-    Monte Carlo simulation for option pricing.
+    Monte Carlo for option pricing.
     
-    Useful for:
-    - Exotic options (Asian, Barrier, Lookback)
-    - American options (early exercise)
-    - Path-dependent payoffs
+    Simulates many random stock price paths and calculates
+    average payoff. Works for any option type.
     """
     
     def __init__(self, S, K, T, r, sigma, num_simulations=10000, num_steps=252):
-        """
-        Parameters:
-        -----------
-        S : float
-            Current stock price
-        K : float
-            Strike price
-        T : float
-            Time to expiration (in years)
-        r : float
-            Risk-free rate
-        sigma : float
-            Volatility
-        num_simulations : int
-            Number of Monte Carlo paths
-        num_steps : int
-            Number of time steps per path
-        """
         self.S = S
         self.K = K
         self.T = T
@@ -40,43 +20,41 @@ class MonteCarloSimulation:
         self.num_steps = num_steps
         self.dt = T / num_steps
         
-        # Pre-compute for efficiency
+        # Pre-calculate drift and volatility components for efficiency
         self.drift = (r - 0.5 * sigma ** 2) * self.dt
-        self.volatility_shock = sigma * np.sqrt(self.dt)
+        self.vol_shock = sigma * np.sqrt(self.dt)
     
     def generate_paths(self, random_seed=None):
         """
-        Generate stock price paths using geometric Brownian motion.
+        Generate random stock price paths using GBM.
         
-        dS = mu * S * dt + sigma * S * dW
-        
-        Returns:
-        --------
-        np.array : Shape (num_simulations, num_steps + 1)
+        Each path is one possible future scenario.
+        With 1000+ paths, we get a good distribution of outcomes.
         """
         if random_seed is not None:
             np.random.seed(random_seed)
         
-        # Initialize paths
+        # Initialize all paths starting at current price
         paths = np.zeros((self.num_simulations, self.num_steps + 1))
         paths[:, 0] = self.S
         
-        # Generate random shocks
+        # Generate random normal shocks
         shocks = np.random.standard_normal((self.num_simulations, self.num_steps))
         
-        # Simulate paths
+        # Simulate each step forward in time
         for t in range(self.num_steps):
             paths[:, t + 1] = paths[:, t] * np.exp(
-                self.drift + self.volatility_shock * shocks[:, t]
+                self.drift + self.vol_shock * shocks[:, t]
             )
         
         return paths
     
     def european_call(self):
-        """Price European call option"""
+        """Price a European call - simple payoff at expiration"""
         paths = self.generate_paths()
         final_prices = paths[:, -1]
         payoffs = np.maximum(final_prices - self.K, 0)
+        
         price = np.exp(-self.r * self.T) * np.mean(payoffs)
         std_error = np.std(payoffs) / np.sqrt(self.num_simulations)
         
@@ -87,10 +65,11 @@ class MonteCarloSimulation:
         }
     
     def european_put(self):
-        """Price European put option"""
+        """Price a European put"""
         paths = self.generate_paths()
         final_prices = paths[:, -1]
         payoffs = np.maximum(self.K - final_prices, 0)
+        
         price = np.exp(-self.r * self.T) * np.mean(payoffs)
         std_error = np.std(payoffs) / np.sqrt(self.num_simulations)
         
@@ -101,10 +80,11 @@ class MonteCarloSimulation:
         }
     
     def asian_call(self):
-        """Price Asian call (average price)"""
+        """Asian call - payoff based on average price, not final price"""
         paths = self.generate_paths()
         average_prices = np.mean(paths, axis=1)
         payoffs = np.maximum(average_prices - self.K, 0)
+        
         price = np.exp(-self.r * self.T) * np.mean(payoffs)
         std_error = np.std(payoffs) / np.sqrt(self.num_simulations)
         
@@ -116,21 +96,24 @@ class MonteCarloSimulation:
     
     def barrier_call(self, barrier_level, barrier_type='knock_out'):
         """
-        Price barrier option.
+        Barrier option - has a knock-in or knock-out level.
         
-        barrier_type: 'knock_out' or 'knock_in'
+        knock_out: if price ever touches barrier, option becomes worthless
+        knock_in: option only pays off if price touches barrier
         """
         paths = self.generate_paths()
         final_prices = paths[:, -1]
         
         if barrier_type == 'knock_out':
-            # Knock out if price ever touches barrier
+            # Did the price ever touch the barrier?
             knocked_out = np.any(paths >= barrier_level, axis=1)
             payoffs = np.where(knocked_out, 0, np.maximum(final_prices - self.K, 0))
         elif barrier_type == 'knock_in':
-            # Only pays if price touches barrier
+            # Did the price ever touch the barrier?
             knocked_in = np.any(paths >= barrier_level, axis=1)
             payoffs = np.where(knocked_in, np.maximum(final_prices - self.K, 0), 0)
+        else:
+            raise ValueError("barrier_type must be 'knock_out' or 'knock_in'")
         
         price = np.exp(-self.r * self.T) * np.mean(payoffs)
         std_error = np.std(payoffs) / np.sqrt(self.num_simulations)
@@ -142,10 +125,11 @@ class MonteCarloSimulation:
         }
     
     def lookback_call(self):
-        """Price lookback call (max price observed)"""
+        """Lookback call - payoff based on the highest price reached"""
         paths = self.generate_paths()
         max_prices = np.max(paths, axis=1)
         payoffs = np.maximum(max_prices - self.K, 0)
+        
         price = np.exp(-self.r * self.T) * np.mean(payoffs)
         std_error = np.std(payoffs) / np.sqrt(self.num_simulations)
         

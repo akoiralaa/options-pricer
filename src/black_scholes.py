@@ -68,7 +68,7 @@ class BlackScholesModel:
     
     def call_vega(self):
         """Vega: rate of change of call price w.r.t. volatility"""
-        return self.S * norm.pdf(self.d1) * np.sqrt(self.T) / 100
+        return self.S * norm.pdf(self.d1) * np.sqrt(self.T) / 100  # Divided by 100 for 1% change
     
     def put_vega(self):
         """Vega: rate of change of put price w.r.t. volatility (same as call)"""
@@ -78,26 +78,45 @@ class BlackScholesModel:
         """Theta: rate of change of call price w.r.t. time (per day)"""
         term1 = -(self.S * norm.pdf(self.d1) * self.sigma) / (2 * np.sqrt(self.T))
         term2 = -self.r * self.K * np.exp(-self.r * self.T) * norm.cdf(self.d2)
-        return (term1 + term2) / 365
+        return (term1 + term2) / 365  # Convert to daily theta
     
     def put_theta(self):
         """Theta: rate of change of put price w.r.t. time (per day)"""
         term1 = -(self.S * norm.pdf(self.d1) * self.sigma) / (2 * np.sqrt(self.T))
         term2 = self.r * self.K * np.exp(-self.r * self.T) * norm.cdf(-self.d2)
-        return (term1 + term2) / 365
+        return (term1 + term2) / 365  # Convert to daily theta
     
     def call_rho(self):
         """Rho: rate of change of call price w.r.t. interest rate"""
-        return self.K * self.T * np.exp(-self.r * self.T) * norm.cdf(self.d2) / 100
+        return self.K * self.T * np.exp(-self.r * self.T) * norm.cdf(self.d2) / 100  # Per 1% change
     
     def put_rho(self):
         """Rho: rate of change of put price w.r.t. interest rate"""
-        return -self.K * self.T * np.exp(-self.r * self.T) * norm.cdf(-self.d2) / 100
+        return -self.K * self.T * np.exp(-self.r * self.T) * norm.cdf(-self.d2) / 100  # Per 1% change
 
 
 def get_all_greeks(S, K, T, r, sigma, option_type='call'):
     """
     Convenience function to get all Greeks at once.
+    
+    Parameters:
+    -----------
+    S : float
+        Current stock price
+    K : float
+        Strike price
+    T : float
+        Time to expiration (in years)
+    r : float
+        Risk-free interest rate
+    sigma : float
+        Volatility
+    option_type : str
+        'call' or 'put'
+    
+    Returns:
+    --------
+    dict : Dictionary with price and all Greeks
     """
     bs = BlackScholesModel(S, K, T, r, sigma)
     
