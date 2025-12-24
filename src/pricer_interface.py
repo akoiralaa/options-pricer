@@ -200,7 +200,7 @@ class OptionsPricerInterface:
             print("3. Calculate Implied Volatility")
             print("4. Price Exotic Options")
             print("5. Compare Black-Scholes vs Monte Carlo")
-            print("6. 📊 VISUALIZE DATA (Graphs & Charts)")
+            print("6. VISUALIZE DATA (Graphs & Charts)")
             print("7. Input new parameters")
             print("8. Exit")
             print("="*60)
