@@ -181,6 +181,14 @@ class OptionsPricerInterface:
         print(f"  Difference:    ${put_diff:.4f} ({put_diff_pct:.2f}%)")
         print(f"  Within 95% CI: {'✓' if put_diff < mc_results['put_std_error'] * 1.96 else '✗'}")
     
+    def visualize_data(self):
+        """Show all visualizations"""
+        from interactive_visualizer import InteractiveVisualizer
+        
+        print("\nGenerating visualizations... This may take a moment.")
+        visualizer = InteractiveVisualizer(self.S, self.K, self.T, self.r, self.sigma)
+        visualizer.show_all_visualizations()
+    
     def interactive_menu(self):
         """Main interactive menu"""
         while True:
@@ -192,11 +200,12 @@ class OptionsPricerInterface:
             print("3. Calculate Implied Volatility")
             print("4. Price Exotic Options")
             print("5. Compare Black-Scholes vs Monte Carlo")
-            print("6. Input new parameters")
-            print("7. Exit")
+            print("6. 📊 VISUALIZE DATA (Graphs & Charts)")
+            print("7. Input new parameters")
+            print("8. Exit")
             print("="*60)
             
-            choice = input("\nSelect option (1-7): ")
+            choice = input("\nSelect option (1-8): ")
             
             if choice == '1':
                 self.price_black_scholes()
@@ -209,11 +218,13 @@ class OptionsPricerInterface:
             elif choice == '5':
                 self.compare_methods()
             elif choice == '6':
+                self.visualize_data()
+            elif choice == '7':
                 if self.get_user_input():
                     continue
                 else:
                     continue
-            elif choice == '7':
+            elif choice == '8':
                 print("\nExiting... Goodbye!")
                 break
             else:
