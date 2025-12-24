@@ -23,58 +23,47 @@ pip install numpy scipy pandas matplotlib plotly jupyter
 
 ## Quick Start
 
-### Price a European Option
-```python
-from src.black_scholes import BlackScholesModel
-
-# Parameters
-S = 100      # Stock price
-K = 100      # Strike price
-T = 30/365   # 30 days to expiration
-r = 0.05     # 5% risk-free rate
-sigma = 0.20 # 20% volatility
-
-# Create pricer
-bs = BlackScholesModel(S, K, T, r, sigma)
-
-# Get price and Greeks
-print(f"Call Price: ${bs.call_price():.4f}")
-print(f"Delta: {bs.call_delta():.4f}")
-print(f"Gamma: {bs.gamma():.6f}")
-print(f"Vega: ${bs.call_vega():.4f}")
-print(f"Theta: ${bs.call_theta():.4f}")
-print(f"Rho: ${bs.call_rho():.4f}")
+Simply run the interactive calculator:
+```bash
+python3 launch_pricer.py
 ```
 
-### Calculate Implied Volatility
-```python
-from src.implied_vol import calculate_iv
+### How It Works
 
-# Market observed price
-market_price = 2.50
+1. **Enter Parameters** - Input your stock price, strike, expiration, rate, and volatility
+2. **Automatic Analysis** - The tool instantly runs all 5 analyses:
+   - Black-Scholes pricing
+   - Monte Carlo simulation
+   - Implied volatility analysis
+   - Exotic options pricing
+   - Method comparison
 
-# Solve for implied volatility
-iv = calculate_iv(S=100, K=100, T=30/365, r=0.05, 
-                  market_price=market_price, option_type='call')
-print(f"Implied Volatility: {iv*100:.2f}%")
+3. **View Results** - See all Greeks, confidence intervals, and pricing comparisons
+4. **Visualize** - Generate beautiful graphs showing payoff diagrams, sensitivities, and simulations
+5. **Iterate** - Input new parameters or exit
+
+### Example Session
 ```
+Enter parameters:
+Stock Price: 100
+Strike Price: 100
+Days to Expiration: 30
+Risk-free Rate: 0.05
+Volatility: 0.20
 
-### Price Exotic Options with Monte Carlo
-```python
-from src.monte_carlo import MonteCarloSimulation
+[Automatically runs all analyses...]
 
-# Create simulator
-mc = MonteCarloSimulation(S=100, K=100, T=30/365, r=0.05, 
-                         sigma=0.20, num_simulations=100000)
+RESULTS:
+1. Black-Scholes Prices & Greeks
+2. Monte Carlo Simulation (100,000 paths)
+3. Implied Volatility Analysis
+4. Exotic Options (Asian, Barrier, Lookback)
+5. Comparison of methods
 
-# Price exotic options
-asian = mc.asian_call()
-barrier = mc.barrier_call(barrier_level=110, barrier_type='knock_out')
-lookback = mc.lookback_call()
-
-print(f"Asian Call: ${asian['price']:.4f}")
-print(f"Barrier Call: ${barrier['price']:.4f}")
-print(f"Lookback Call: ${lookback['price']:.4f}")
+NEXT:
+- Visualize Data (Graphs & Charts)
+- Input New Parameters
+- Exit
 ```
 
 ## Mathematical Background
@@ -123,14 +112,14 @@ Then computes expected payoff under risk-neutral measure.
 options-pricer/
 ├── src/
 │   ├── __init__.py
-│   ├── black_scholes.py      # Black-Scholes pricer and Greeks
-│   ├── implied_vol.py        # Implied volatility solver
-│   └── monte_carlo.py        # Monte Carlo simulation
+│   ├── black_scholes.py          # Black-Scholes pricer and Greeks
+│   ├── implied_vol.py            # Implied volatility solver
+│   ├── monte_carlo.py            # Monte Carlo simulation
+│   ├── pricer_interface.py        # User interface
+│   └── interactive_visualizer.py  # Visualization engine
 ├── tests/
-│   └── test_pricer.py        # Unit tests
-├── run_simple.py             # Quick start script
-├── test_iv.py                # Implied vol test
-├── test_monte_carlo.py       # Monte Carlo test
+│   └── test_black_scholes.py      # Unit tests
+├── launch_pricer.py               # Main entry point
 └── README.md
 ```
 
@@ -149,19 +138,28 @@ options-pricer/
 |---|---|---|
 | 25.00% | 25.0000% | 0.000% |
 
+## Visualizations
+
+The tool generates 4 beautiful graphs:
+
+1. **Option Payoff Diagrams** - Shows profit/loss at expiration
+2. **Price Sensitivity** - How option prices change with stock price
+3. **The Greeks** - Visual explanation of all Greeks
+4. **Monte Carlo Simulation** - Stock paths and payoff distributions
+
 ## Performance
 
 - Black-Scholes: < 1ms per option
 - Implied Vol (Brent): 2-5ms per option
 - Monte Carlo (100K paths): 50-100ms per option
 
-## Future Enhancements
+## Use Cases
 
-- [ ] American option pricing (binomial tree)
-- [ ] Volatility surface visualization
-- [ ] Real market data integration
-- [ ] Greeks surface plots
-- [ ] Vectorized batch pricing
+- **Traders** - Quick option pricing and Greeks for decision making
+- **Risk Managers** - Understand exposure and sensitivities
+- **Students** - Learn options pricing interactively
+- **Quants** - Validate pricing models and compare methods
+- **Portfolio Managers** - Analyze exotic option strategies
 
 ## References
 
